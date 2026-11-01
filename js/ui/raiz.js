@@ -33,7 +33,7 @@ function usarTema(apariencia) {
   }, [apariencia])
 }
 
-export function Raiz() {
+export function Raiz({ alMontar }) {
   const [, refrescar] = useReducer((n) => n + 1, 0)
   useEffect(() => {
     const quitarAlmacen = almacen.suscribir(refrescar)
@@ -46,6 +46,8 @@ export function Raiz() {
     }
     addEventListener('popstate', alVolver)
     addEventListener('keydown', alTeclear)
+    // Va aquí porque los avisos solo se dibujan cuando Raiz ya está suscrita.
+    alMontar?.()
     return () => {
       quitarAlmacen()
       quitarInterfaz()
