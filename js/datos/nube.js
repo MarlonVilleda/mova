@@ -53,11 +53,11 @@ export class Nube {
 
   // MARK: Cuenta
 
-  async pedirAuth(ruta, cuerpo, token) {
+  async pedirAuth(ruta, cuerpo, token, metodo = 'POST') {
     let r
     try {
       r = await this.pedir(`${this.url}/auth/v1/${ruta}`, {
-        method: 'POST',
+        method: metodo,
         headers: { apikey: this.clave, 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(cuerpo),
       })
@@ -95,6 +95,11 @@ export class Nube {
 
   recuperar(correo) {
     return this.pedirAuth('recover', { email: correo })
+  }
+
+  /** `token` es el que llega en el enlace del correo para recuperar la contraseña. */
+  cambiarContrasena(token, contrasena) {
+    return this.pedirAuth('user', { password: contrasena }, token, 'PUT')
   }
 
   /** Sube lo pendiente antes de cerrar: los datos de este dispositivo se borran y quedan solo en la cuenta. */

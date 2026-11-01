@@ -1,6 +1,6 @@
 import { html, render } from './vendor/preact-htm.js'
 import { pedirAlmacenamientoPersistente } from './datos/persistencia.js'
-import { almacen, bloqueo, nube, refrescar } from './ui/estado.js'
+import { almacen, avisar, bloqueo, nav, nube, refrescar } from './ui/estado.js'
 import { PantallaCarga, Raiz } from './ui/raiz.js'
 
 const raiz = document.getElementById('app')
@@ -11,6 +11,15 @@ await nube.iniciar().catch(() => {})
 await bloqueo.iniciar().catch(() => {})
 raiz.textContent = ''
 render(html`<${Raiz} />`, raiz)
+
+// Los enlaces de los correos de Supabase vuelven aquí con el resultado después del #.
+const retorno = new URLSearchParams(location.hash.slice(1))
+if (retorno.has('access_token') || retorno.has('error')) {
+  history.replaceState(null, '', location.pathname)
+  if (retorno.has('error')) avisar('Ese enlace venció o ya se usó. Intenta entrar con tu correo y contraseña; si no puedes, pide uno nuevo.')
+  else if (retorno.get('type') === 'recovery') nav.abrir({ tipo: 'FormNuevaClave', token: retorno.get('access_token') })
+  else avisar('Correo confirmado. Ahora entra con tu correo y contraseña en Ajustes.')
+}
 
 // Guarda lo pendiente al salir: en el teléfono la app puede cerrarse sin avisar.
 document.addEventListener('visibilitychange', () => {

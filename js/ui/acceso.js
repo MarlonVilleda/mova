@@ -5,6 +5,28 @@ import { FilaBoton, Hoja, SeccionForm, Separador } from './formularios.js'
 
 const correoValido = (c) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)
 
+/** Se abre desde el enlace del correo «Olvidé mi contraseña». */
+export function FormNuevaClave({ token, alCerrar }) {
+  const [contrasena, setContrasena] = useState('')
+  const [error, setError] = useState(null)
+  const guardar = async () => {
+    try {
+      await nube.cambiarContrasena(token, contrasena)
+      alCerrar()
+      avisar('Contraseña cambiada. Ya puedes entrar con ella.')
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+  return html`<${Hoja} titulo="Nueva contraseña" alCerrar=${alCerrar}>
+    <${SeccionForm} pie=${html`<${MensajeError} texto=${error} />Debe tener al menos 8 caracteres.`}>
+      <input class="fila-texto" type="password" autocomplete="new-password" placeholder="Nueva contraseña" aria-label="Nueva contraseña"
+        value=${contrasena} onInput=${(e) => setContrasena(e.target.value)} />
+    <//>
+    <${SeccionForm}><${FilaBoton} texto="Guardar contraseña" alTocar=${guardar} habilitado=${contrasena.length >= 8} /><//>
+  <//>`
+}
+
 export function FormAcceso({ alCerrar }) {
   const [modo, setModo] = useState('entrar')
   const [correo, setCorreo] = useState('')

@@ -1,5 +1,5 @@
 import { html, useEffect, useReducer } from '../vendor/preact-htm.js'
-import { FormAcceso } from './acceso.js'
+import { FormAcceso, FormNuevaClave } from './acceso.js'
 import { AjustesPantalla, FormCuenta } from './ajustes.js'
 import { PantallaBloqueo } from './bloqueo.js'
 import { Categorias, FormCategoria } from './categorias.js'
@@ -95,6 +95,7 @@ function PantallaEncima({ p }) {
     case 'FormAporte': return html`<${FormAporte} metaId=${p.metaId} alCerrar=${cerrar} />`
     case 'FormSuscripcion': return html`<${FormSuscripcion} original=${p.original} alCerrar=${cerrar} />`
     case 'FormAcceso': return html`<${FormAcceso} alCerrar=${cerrar} />`
+    case 'FormNuevaClave': return html`<${FormNuevaClave} token=${p.token} alCerrar=${cerrar} />`
     case 'Dispositivos': return html`<${Dispositivos} alCerrar=${cerrar} />`
     case 'Categorias': return html`<${Categorias} alCerrar=${cerrar} />`
     case 'FormCategoria': return html`<${FormCategoria} clave=${p.clave} tipoCategoria=${p.tipoCategoria} alCrear=${p.alCrear} alCerrar=${cerrar} />`
