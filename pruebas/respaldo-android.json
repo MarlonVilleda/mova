@@ -1,0 +1,58 @@
+{
+  "cuentas": [
+    { "id": "11111111-1111-4111-8111-111111111111", "nombre": "Banrural", "tipo": "banco", "saldoInicial": 1000.0, "color": 5 },
+    { "id": "22222222-2222-4222-8222-222222222222", "nombre": "Tarjeta BAC", "tipo": "tarjeta", "saldoInicial": -300.0, "color": 2 }
+  ],
+  "movimientos": [
+    {
+      "id": "33333333-3333-4333-8333-333333333331", "tipo": "ingreso", "monto": 500.0, "categoria": "salario",
+      "cuentaID": "11111111-1111-4111-8111-111111111111", "nota": "", "fecha": "2026-10-01T18:30:00Z"
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333332", "tipo": "gasto", "monto": 80.0, "categoria": "comida",
+      "cuentaID": "22222222-2222-4222-8222-222222222222", "sobreID": "66666666-6666-4666-8666-666666666666",
+      "nota": "Almuerzo", "fecha": "2026-10-02T18:30:00Z"
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333333", "tipo": "transferencia", "monto": 200.0, "categoria": "transferencia",
+      "cuentaID": "11111111-1111-4111-8111-111111111111", "cuentaDestinoID": "22222222-2222-4222-8222-222222222222",
+      "nota": "", "fecha": "2026-10-03T18:30:00Z"
+    }
+  ],
+  "deudas": [
+    {
+      "id": "44444444-4444-4444-8444-444444444444", "nombre": "Préstamo auto", "persona": "Banco", "direccion": "yoDebo",
+      "montoTotal": 1000.0, "tasaAnual": 12.5, "cuotaMensual": 100.0, "diaDePago": 15, "fechaInicio": "2026-01-15T06:00:00Z",
+      "nota": "", "color": 3,
+      "abonos": [
+        { "id": "44444444-4444-4444-8444-444444444445", "monto": 250.0, "fecha": "2026-02-15T18:00:00Z", "nota": "Pagado antes de registrar" }
+      ]
+    }
+  ],
+  "metas": [
+    {
+      "id": "55555555-5555-4555-8555-555555555555", "nombre": "Viaje", "icono": "airplane", "objetivo": 1000.0, "color": 1,
+      "fechaObjetivo": "2027-06-01T06:00:00Z",
+      "aportes": [{ "id": "55555555-5555-4555-8555-555555555556", "monto": 100.0, "fecha": "2026-09-01T18:00:00Z", "nota": "" }]
+    }
+  ],
+  "pagosFijos": [
+    {
+      "id": "77777777-7777-4777-8777-777777777777", "nombre": "Netflix", "monto": 15.49, "categoria": "suscripciones",
+      "frecuencia": "mensual", "diaDelMes": 31, "proximoCobro": "2026-10-31T06:00:00Z", "esSuscripcion": true,
+      "cancelada": false, "avisarDiasAntes": 1
+    }
+  ],
+  "sobres": [
+    {
+      "id": "66666666-6666-4666-8666-666666666666", "nombre": "Comida", "icono": "fork.knife", "color": 9,
+      "categorias": ["comida", "supermercado"], "montoHabitual": 200.0, "acumula": false, "creado": "2026-09-01T18:00:00Z"
+    }
+  ],
+  "asignaciones": { "2026-10": { "66666666-6666-4666-8666-666666666666": 200.0 } },
+  "presupuestos": {},
+  "ajustes": {
+    "nombre": "Marlon", "moneda": "GTQ", "bloqueo": false, "recordatorios": true, "apariencia": "automatica",
+    "montosEnWidget": true, "respaldoAutomatico": true, "ultimoRespaldo": "2026-10-10T18:00:00Z"
+  }
+}
