@@ -188,7 +188,8 @@ function FilaCuenta({ cuenta }) {
 export function FormCuenta({ original, alCerrar }) {
   const [nombre, setNombre] = useState(original?.nombre ?? '')
   const [tipo, setTipo] = useState(original?.tipo ?? 'banco')
-  const [saldoTexto, setSaldoTexto] = useState(original ? textoEditable(Math.abs(original.saldoInicial)) : '')
+  const [saldoOriginal] = useState(() => (original ? textoEditable(Math.abs(almacen.saldo(original))) : ''))
+  const [saldoTexto, setSaldoTexto] = useState(saldoOriginal)
   const [color, setColor] = useState(original?.color ?? 5)
   const [limiteTexto, setLimiteTexto] = useState(original?.limite != null ? textoEditable(original.limite) : '')
 
@@ -203,7 +204,10 @@ export function FormCuenta({ original, alCerrar }) {
 
   const guardar = () => {
     const saldo = Math.abs(comoMonto(saldoTexto) ?? 0)
-    const cuenta = { ...(original ?? { id: nuevoId() }), nombre: nombre.trim(), tipo, saldoInicial: esTarjeta ? -saldo : saldo, color }
+    // Si no se tocó el saldo se conserva tal cual: una cuenta en negativo no se puede escribir en este campo.
+    const igual = original && saldoTexto === saldoOriginal && tipo === original.tipo
+    const saldoInicial = igual ? original.saldoInicial : almacen.saldoInicialPara(original, esTarjeta ? -saldo : saldo)
+    const cuenta = { ...(original ?? { id: nuevoId() }), nombre: nombre.trim(), tipo, saldoInicial, color }
     const limite = comoMonto(limiteTexto)
     if (esTarjeta && limite > 0) cuenta.limite = limite
     else delete cuenta.limite
@@ -215,8 +219,9 @@ export function FormCuenta({ original, alCerrar }) {
   })
 
   return html`<${Hoja} titulo=${original ? 'Editar cuenta' : 'Nueva cuenta'} alCerrar=${alCerrar} puedeGuardar=${error == null} alGuardar=${guardar}>
-    <${SeccionForm} titulo=${esTarjeta ? 'Lo que debes en la tarjeta' : 'Saldo inicial'}
-      pie=${esTarjeta ? 'Se guarda como saldo negativo. Tus compras con la tarjeta lo aumentan y tus pagos lo reducen.' : 'Lo que tenías en esta cuenta antes de empezar a usar la app.'}>
+    <${SeccionForm} titulo=${esTarjeta ? 'Lo que debes en la tarjeta' : original ? 'Saldo actual' : 'Saldo inicial'}
+      pie=${esTarjeta ? 'Se guarda como saldo negativo. Tus compras con la tarjeta lo aumentan y tus pagos lo reducen.'
+        : original ? 'Escribe lo que tienes ahora en esta cuenta. Tus movimientos no se borran.' : 'Lo que tenías en esta cuenta antes de empezar a usar la app.'}>
       <${CampoMonto} texto=${saldoTexto} alCambiar=${setSaldoTexto} color=${colorDe(color)} etiqueta="Saldo" />
     <//>
     <${SeccionForm} pie=${html`<${MensajeError} texto=${nombre ? error : null} />`}>

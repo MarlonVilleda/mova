@@ -399,3 +399,21 @@ test('una deuda de otra persona no descuenta de la cuenta', async () => {
   a.guardarDeuda({ ...a.datos.deudas[0], direccion: 'meDeben', cuentaID: banco.id })
   assert.equal(a.comprometido(banco), 0)
 })
+
+test('corregir el saldo actual no toca los movimientos', async () => {
+  const a = await almacenCon(respaldo)
+  const [banco, tarjeta] = a.datos.cuentas
+  const movimientos = a.datos.movimientos.length
+  a.guardarCuenta({ ...banco, saldoInicial: a.saldoInicialPara(banco, 255) })
+  assert.equal(a.saldo(a.datos.cuentas[0]), 255)
+  assert.equal(a.datos.movimientos.length, movimientos)
+  assert.equal(a.saldo(tarjeta), -180, 'las otras cuentas no cambian')
+
+  a.guardarMovimiento({ id: 'CCCCCCCC-CCCC-4CCC-8CCC-CCCCCCCCCCCC', tipo: 'gasto', monto: 5, categoria: 'comida', cuentaID: banco.id, nota: '', fecha: dentroDe(mesActual()) })
+  assert.equal(a.saldo(a.datos.cuentas[0]), 250, 'lo nuevo sigue sumando y restando')
+
+  const b = await almacenCon(a.exportarRespaldo())
+  validar(b.datos)
+  assert.equal(b.saldo(b.datos.cuentas[0]), 250)
+  assert.equal(a.saldoInicialPara(null, 40), 40, 'una cuenta nueva parte de lo escrito')
+})

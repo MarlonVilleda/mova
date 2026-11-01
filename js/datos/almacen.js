@@ -219,6 +219,12 @@ export class Almacen {
     return this.indice.saldos.get(cuenta.id) ?? cuenta.saldoInicial
   }
 
+  /** Saldo inicial con el que la cuenta llega a `deseado`, sin tocar sus movimientos. */
+  saldoInicialPara(cuenta, deseado) {
+    const movimientos = cuenta ? this.saldo(cuenta) - cuenta.saldoInicial : 0
+    return Math.round((deseado - movimientos) * 100) / 100
+  }
+
   /** Deudas pendientes asociadas a esta cuenta. Es opcional: una deuda puede no tener cuenta. */
   deudasDe(cuenta) {
     return this.datos.deudas.filter((d) => d.cuentaID === cuenta.id && d.direccion === 'yoDebo' && !liquidada(d))
