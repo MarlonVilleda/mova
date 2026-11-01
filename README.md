@@ -17,7 +17,7 @@ npx serve .
 ## Pruebas
 
 ```bash
-node --test pruebas/
+node --test "pruebas/*.test.mjs"
 ```
 
 ## Instalar en iPhone
