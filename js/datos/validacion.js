@@ -75,6 +75,7 @@ export function validar(d) {
 
   for (const c of d.cuentas) {
     revisar(Math.abs(c.saldoInicial) <= Limites.montoMaximo, `saldo de ${c.nombre}`)
+    revisar(c.limite == null || esMontoValido(c.limite), `límite de ${c.nombre}`)
   }
   for (const m of d.movimientos) {
     revisar(esMontoValido(m.monto) && m.monto > 0, 'monto de un movimiento')

@@ -352,3 +352,50 @@ test('si no se puede leer, no se escribe encima', async () => {
   await a.guardarAhora()
   assert.deepEqual(escrituras, [])
 })
+
+test('cada cuenta calcula lo disponible con sus deudas asociadas', async () => {
+  const a = await almacenCon(respaldo)
+  const [banco, tarjeta] = a.datos.cuentas
+  const deuda = a.datos.deudas[0]
+  assert.equal(a.disponibleEn(banco), 1300, 'sin deuda asociada es su saldo')
+
+  a.guardarDeuda({ ...deuda, cuentaID: banco.id })
+  assert.equal(a.comprometido(banco), 750)
+  assert.equal(a.disponibleEn(banco), 550)
+  assert.equal(a.saldo(banco), 1300, 'asociar no toca el saldo')
+  assert.equal(a.disponibleEn(tarjeta), a.saldo(tarjeta), 'no mezcla cuentas')
+
+  a.abonar(100, deuda.id, new Date().toISOString().replace(/\.\d+Z$/, 'Z'), '', null)
+  assert.equal(a.disponibleEn(banco), 650)
+  a.abonar(650, deuda.id, new Date().toISOString().replace(/\.\d+Z$/, 'Z'), '', null)
+  assert.equal(a.deudasDe(banco).length, 0, 'una deuda liquidada ya no cuenta')
+
+  const b = await almacenCon(a.exportarRespaldo())
+  assert.equal(b.datos.deudas[0].cuentaID, banco.id)
+})
+
+test('una tarjeta con límite parte del crédito sin usar', async () => {
+  const a = await almacenCon(respaldo)
+  const tarjeta = a.datos.cuentas[1]
+  a.guardarCuenta({ ...tarjeta, limite: 1000 })
+  const conLimite = a.datos.cuentas[1]
+  assert.equal(a.saldo(conLimite), -180)
+  assert.equal(a.disponibleEn(conLimite), 820)
+  a.guardarDeuda({ ...a.datos.deudas[0], cuentaID: conLimite.id })
+  assert.equal(a.disponibleEn(conLimite), 70)
+})
+
+test('eliminar una cuenta suelta sus deudas', async () => {
+  const a = await almacenCon(respaldo)
+  const [banco] = a.datos.cuentas
+  a.guardarDeuda({ ...a.datos.deudas[0], cuentaID: banco.id })
+  a.eliminarCuenta(banco)
+  assert.equal(a.datos.deudas[0].cuentaID, undefined)
+})
+
+test('una deuda de otra persona no descuenta de la cuenta', async () => {
+  const a = await almacenCon(respaldo)
+  const [banco] = a.datos.cuentas
+  a.guardarDeuda({ ...a.datos.deudas[0], direccion: 'meDeben', cuentaID: banco.id })
+  assert.equal(a.comprometido(banco), 0)
+})

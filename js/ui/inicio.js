@@ -1,9 +1,10 @@
 import { html } from '../vendor/preact-htm.js'
 import { diasDesdeHoy, mesActual, sumarMes, textoRelativo } from '../datos/fechas.js'
 import { dinero, dineroCorto, mesConMayuscula, porcentaje } from '../datos/formato.js'
+import { TipoCuenta } from '../datos/modelos.js'
 import { guardarRespaldo } from './ajustes.js'
 import {
-  BarraProgreso, BotonMova, C, Dato, Encabezado, FilaDatos, FilaMovimiento, Icono, Logo, Monto, Nota, Simbolo, Tarjeta,
+  BarraProgreso, BotonMova, C, Dato, Encabezado, FilaDatos, FilaMovimiento, Icono, Logo, Nota, Simbolo, Tarjeta,
   TituloPantalla, Vacio, colorDe, tono,
 } from './componentes.js'
 import { almacen, marcarPagado, nav, nube } from './estado.js'
@@ -27,17 +28,45 @@ export function InicioPantalla() {
   </div>`
 }
 
+/** Cada cuenta va por separado: el efectivo, los bancos y las tarjetas no se suman entre sí. */
 function TarjetaPrincipal() {
+  const { cuentas } = almacen.datos
   return html`<${Tarjeta} tinte=${C.violeta}>
-    <span class="secundario">Dinero disponible</span>
-    <${Monto} texto=${dinero(almacen.saldoTotal)} tamano=${38} />
+    <${Encabezado} titulo="Mi dinero" accion="Agregar" alAccion=${() => nav.abrir({ tipo: 'FormCuenta' })} />
+    ${cuentas.length === 0 && html`<${Nota}>Agrega tu efectivo, bancos o tarjetas para ver cuánto tienes en cada uno.<//>`}
+    ${cuentas.map((cuenta) => html`<${FilaDinero} key=${cuenta.id} cuenta=${cuenta} />`)}
     <hr />
     <${FilaDatos}>
       <${Dato} titulo="Debo" valor=${dineroCorto(almacen.totalQueDebo)} color=${C.deuda} icono="arrow.up.right" />
       <${Dato} titulo="Me deben" valor=${dineroCorto(almacen.totalQueMeDeben)} color=${C.cian} icono="arrow.down.left" />
-      <${Dato} titulo="Patrimonio" valor=${dineroCorto(almacen.patrimonio)} icono="sparkle" />
     <//>
   <//>`
+}
+
+function FilaDinero({ cuenta }) {
+  const saldo = almacen.saldo(cuenta)
+  const deudas = almacen.deudasDe(cuenta)
+  const esTarjeta = cuenta.tipo === 'tarjeta'
+  const debe = esTarjeta && saldo < 0
+  const mostrarDisponible = deudas.length > 0 || (esTarjeta && cuenta.limite != null)
+  const disponible = almacen.disponibleEn(cuenta)
+  return html`<button class="fila-dinero" onClick=${() => nav.abrir({ tipo: 'FormCuenta', original: cuenta })}>
+    <span class="fila-dinero-fila">
+      <${Icono} s=${TipoCuenta[cuenta.tipo].icono} color=${colorDe(cuenta.color)} lado=${36} />
+      <span class="crece corta">
+        <b>${cuenta.nombre}</b>
+        <small>${debe ? 'Debes en la tarjeta' : TipoCuenta[cuenta.tipo].nombre}</small>
+      </span>
+      <strong style=${{ color: saldo < 0 ? C.gasto : C.texto }}>${dinero(debe ? -saldo : saldo)}</strong>
+    </span>
+    ${mostrarDisponible && html`
+      <span class="fila-dinero-detalle">
+        <small>
+          ${deudas.length > 0 ? `${deudas.length === 1 ? '1 deuda' : `${deudas.length} deudas`}: ${dinero(almacen.comprometido(cuenta))}` : 'Crédito sin usar'}
+        </small>
+        <small class="fuerte" style=${{ color: disponible < 0 ? C.gasto : C.ingreso }}>Disponible ${dinero(disponible)}</small>
+      </span>`}
+  </button>`
 }
 
 /** Los datos viven solo en este navegador: se recuerda guardar una copia cada semana. */

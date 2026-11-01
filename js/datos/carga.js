@@ -70,9 +70,10 @@ const leerMovimiento = (o) => sinVacios({
   nota: texto(o.nota, ''), fecha: fecha(o.fecha),
 })
 
-const leerCuenta = (o) => ({
+const leerCuenta = (o) => sinVacios({
   ...o,
   id: idODefecto(o.id), nombre: texto(o.nombre), tipo: caso(o.tipo, TipoCuenta), saldoInicial: numero(o.saldoInicial), color: entero(o.color),
+  limite: numero(o.limite, null),
 })
 
 const leerAbono = (o) => sinVacios({
@@ -85,6 +86,7 @@ const leerDeuda = (o) => sinVacios({
   montoTotal: numero(o.montoTotal), tasaAnual: numero(o.tasaAnual, null), cuotaMensual: numero(o.cuotaMensual, null),
   diaDePago: entero(o.diaDePago, null), fechaInicio: fecha(o.fechaInicio), fechaLimite: fechaOpcional(o.fechaLimite),
   nota: texto(o.nota, ''), abonos: lista(o.abonos).map(leerAbono), color: entero(o.color),
+  cuentaID: idOpcional(o.cuentaID),
 })
 
 const leerMeta = (o) => sinVacios({

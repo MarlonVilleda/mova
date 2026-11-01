@@ -3,6 +3,9 @@ import { pedirAlmacenamientoPersistente } from './datos/persistencia.js'
 import { almacen, avisar, bloqueo, nav, nube, refrescar } from './ui/estado.js'
 import { PantallaCarga, Raiz } from './ui/raiz.js'
 
+// Dentro de un marco de otra página no se abre: evita que engañen al usuario con botones superpuestos.
+if (globalThis.top !== globalThis.self) throw new Error('Mova no se abre dentro de otra página')
+
 const raiz = document.getElementById('app')
 
 render(html`<${PantallaCarga} />`, raiz)
@@ -25,7 +28,10 @@ render(html`<${Raiz} alMontar=${atenderEnlaceDeCorreo} />`, raiz)
 
 // Guarda lo pendiente al salir: en el teléfono la app puede cerrarse sin avisar.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
+  const oculta = document.visibilityState === 'hidden'
+  // Con el bloqueo activo, la vista previa del selector de apps no muestra montos.
+  document.documentElement.classList.toggle('privado', oculta && bloqueo.activo)
+  if (oculta) {
     almacen.guardarAhora()
     bloqueo.alOcultar()
   } else {
@@ -33,6 +39,9 @@ document.addEventListener('visibilitychange', () => {
     nube.sincronizar()
   }
 })
+
+for (const evento of ['pointerdown', 'keydown']) addEventListener(evento, () => bloqueo.marcarActividad(), { passive: true })
+setInterval(() => { if (bloqueo.revisarInactividad()) refrescar() }, 30_000)
 addEventListener('pagehide', () => almacen.guardarAhora())
 addEventListener('online', () => nube.sincronizar())
 

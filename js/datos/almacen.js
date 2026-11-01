@@ -3,7 +3,7 @@ import { ahora, fechaLocal, instante, mesDe, sumarMes } from './fechas.js'
 import { Formato } from './formato.js'
 import {
   Categoria, TipoMovimiento, abonadoEsteMes, ahorrado, categoriaOtros, categoriasDeGasto, categoriasDeIngreso, categoriasFijas,
-  categoriasPara, datosIniciales, deIndice, fechaCobro, montoProximaCuota, nuevoId, nuevoSobre, proximoPago, restante, siguienteCobro,
+  categoriasPara, datosIniciales, deIndice, fechaCobro, liquidada, montoProximaCuota, nuevoId, nuevoSobre, proximoPago, restante, siguienteCobro,
   sobresSugeridos, Tonos,
 } from './modelos.js'
 import { ErrorDatos, Limites, esMontoValido, limpio, validar } from './validacion.js'
@@ -219,6 +219,26 @@ export class Almacen {
     return this.indice.saldos.get(cuenta.id) ?? cuenta.saldoInicial
   }
 
+  /** Deudas pendientes asociadas a esta cuenta. Es opcional: una deuda puede no tener cuenta. */
+  deudasDe(cuenta) {
+    return this.datos.deudas.filter((d) => d.cuentaID === cuenta.id && d.direccion === 'yoDebo' && !liquidada(d))
+  }
+
+  /** Lo que falta pagar de las deudas asociadas a esta cuenta. */
+  comprometido(cuenta) {
+    return suma(this.deudasDe(cuenta), restante)
+  }
+
+  /**
+   * Lo que queda libre en una cuenta después de sus deudas asociadas. En una tarjeta con límite
+   * parte del crédito sin usar; las demás parten de su saldo.
+   */
+  disponibleEn(cuenta) {
+    const saldo = this.saldo(cuenta)
+    const base = cuenta.tipo === 'tarjeta' && cuenta.limite != null ? cuenta.limite + saldo : saldo
+    return base - this.comprometido(cuenta)
+  }
+
   get saldoTotal() {
     return suma([...this.indice.saldos.values()], (v) => v)
   }
@@ -429,7 +449,8 @@ export class Almacen {
 
   guardarCuenta(cuenta) {
     if (!Number.isFinite(cuenta.saldoInicial) || Math.abs(cuenta.saldoInicial) > Limites.montoMaximo) return
-    const c = { ...cuenta, nombre: limpio(cuenta.nombre, Limites.nombre) }
+    if (cuenta.limite != null && !esMontoValido(cuenta.limite)) return
+    const c ={ ...cuenta, nombre: limpio(cuenta.nombre, Limites.nombre) }
     if (!c.nombre) return
     this.cambiar({ ...this.datos, cuentas: reemplazarOAgregar(this.datos.cuentas, c) })
   }
@@ -479,6 +500,7 @@ export class Almacen {
         cuentaID: m.cuentaID === cuenta.id, cuentaDestinoID: m.cuentaDestinoID === cuenta.id,
       })),
       pagosFijos: this.datos.pagosFijos.map((p) => sinCampos(p, { cuentaID: p.cuentaID === cuenta.id })),
+      deudas: this.datos.deudas.map((d) => sinCampos(d, { cuentaID: d.cuentaID === cuenta.id })),
     })
   }
 

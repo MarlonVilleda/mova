@@ -6,14 +6,35 @@ import { ErrorDatos, Limites, comoMonto, limpio, primerError } from '../datos/va
 import { elegirArchivo, entregarArchivo, estaInstalada } from './archivos.js'
 import { C, CampoMonto, Icono, Logo, MensajeError, Nota, SelectorColor, TituloPantalla, colorDe } from './componentes.js'
 import { almacen, avisar, bloqueo, confirmar, dispositivo, nav, nube, refrescar } from './estado.js'
-import { FilaBoton, FilaInterruptor, FilaSelector, FilaTexto, Hoja, SeccionForm, Separador } from './formularios.js'
+import { FilaBoton, FilaInterruptor, FilaMontoCorto, FilaSelector, FilaTexto, Hoja, SeccionForm, Separador } from './formularios.js'
 
 const MONEDAS = [
   'USD', 'MXN', 'EUR', 'GTQ', 'HNL', 'NIO', 'CRC', 'PAB', 'DOP', 'COP',
   'PEN', 'CLP', 'ARS', 'BOB', 'PYG', 'UYU', 'VES', 'BRL', 'CAD', 'GBP',
 ]
 
-export async function guardarRespaldo() {
+/** Con el bloqueo activo, lo delicado exige confirmar con Face ID, huella o PIN. */
+async function conPermiso(accion) {
+  if (bloqueo.activo) {
+    try {
+      await bloqueo.verificar()
+    } catch (e) {
+      avisar(e.message)
+      return
+    }
+  }
+  accion()
+}
+
+/** Tras Face ID, Safari exige otro toque para abrir la hoja de compartir o el selector de archivos. */
+function exportar(titulo, entregar) {
+  conPermiso(() => {
+    if (bloqueo.activo) confirmar(titulo, 'El archivo no va cifrado: guárdalo en un lugar seguro.', 'Guardar', entregar)
+    else entregar()
+  })
+}
+
+async function entregarRespaldo() {
   await almacen.guardarAhora()
   const entregado = await entregarArchivo(`mova-respaldo-${hoy()}.json`, almacen.exportarRespaldo(), 'application/json')
   if (entregado) {
@@ -22,9 +43,13 @@ export async function guardarRespaldo() {
   }
 }
 
-async function exportarCSV() {
+export const guardarRespaldo = () => exportar('Guardar respaldo', entregarRespaldo)
+
+async function entregarCSV() {
   if (await entregarArchivo(`movimientos-${hoy()}.csv`, almacen.exportarCSV(), 'text/csv')) avisar('Exportado ✓')
 }
+
+const exportarCSV = () => exportar('Exportar a Excel', entregarCSV)
 
 async function restaurarRespaldo() {
   const archivo = await elegirArchivo()
@@ -42,11 +67,11 @@ async function restaurarRespaldo() {
 export function AjustesPantalla() {
   const { ajustes, cuentas } = almacen.datos
   const alcance = nube.sesion ? ' en todos tus dispositivos' : ''
-  const borrar = () => confirmar('¿Borrar todo?', `Se eliminarán movimientos, deudas, metas, sobres y cuentas${alcance}. No se puede deshacer.`, 'Borrar todos los datos', () => {
+  const borrar = () => conPermiso(() => confirmar('¿Borrar todo?', `Se eliminarán movimientos, deudas, metas, sobres y cuentas${alcance}. No se puede deshacer.`, 'Borrar todos los datos', () => {
     almacen.borrarTodo()
     avisar('Se borraron todos los datos.')
-  })
-  const restaurar = () => confirmar('Restaurar respaldo', 'Se reemplazarán todos los datos actuales por los del respaldo.', 'Elegir archivo', restaurarRespaldo)
+  }))
+  const restaurar = () => conPermiso(() => confirmar('Restaurar respaldo', 'Se reemplazarán todos los datos actuales por los del respaldo.', 'Elegir archivo', restaurarRespaldo))
 
   return html`<div class="pantalla">
     <${TituloPantalla} titulo="Ajustes" />
@@ -62,7 +87,7 @@ export function AjustesPantalla() {
       <${FilaTexto} valor=${ajustes.nombre} alCambiar=${(nombre) => almacen.cambiarAjustes({ nombre })} placeholder="Tu nombre" maximo=${30} />
     <//>
 
-    <${SeccionForm} titulo="Cuentas" pie=${`Efectivo, bancos, tarjetas o ahorros. Total: ${dinero(almacen.saldoTotal)}`}>
+    <${SeccionForm} titulo="Cuentas" pie="Efectivo, bancos, tarjetas o ahorros. Cada una lleva su propio saldo.">
       ${cuentas.map((cuenta) => html`
         <${FilaCuenta} key=${cuenta.id} cuenta=${cuenta} />
         <${Separador} />`)}
@@ -165,20 +190,24 @@ export function FormCuenta({ original, alCerrar }) {
   const [tipo, setTipo] = useState(original?.tipo ?? 'banco')
   const [saldoTexto, setSaldoTexto] = useState(original ? textoEditable(Math.abs(original.saldoInicial)) : '')
   const [color, setColor] = useState(original?.color ?? 5)
+  const [limiteTexto, setLimiteTexto] = useState(original?.limite != null ? textoEditable(original.limite) : '')
 
   const nombreLimpio = limpio(nombre, Limites.nombre)
   const error = primerError(
     [!nombreLimpio, 'Escribe un nombre.'],
     [almacen.datos.cuentas.some((c) => c.id !== original?.id && c.nombre.toLowerCase() === nombreLimpio.toLowerCase()), 'Ya tienes una cuenta con ese nombre.'],
     [saldoTexto && comoMonto(saldoTexto) == null, 'El saldo no es válido.'],
+    [tipo === 'tarjeta' && limiteTexto && comoMonto(limiteTexto) == null, 'El límite no es válido.'],
   )
   const esTarjeta = tipo === 'tarjeta'
 
   const guardar = () => {
     const saldo = Math.abs(comoMonto(saldoTexto) ?? 0)
-    almacen.guardarCuenta({
-      ...(original ?? { id: nuevoId() }), nombre: nombre.trim(), tipo, saldoInicial: esTarjeta ? -saldo : saldo, color,
-    })
+    const cuenta = { ...(original ?? { id: nuevoId() }), nombre: nombre.trim(), tipo, saldoInicial: esTarjeta ? -saldo : saldo, color }
+    const limite = comoMonto(limiteTexto)
+    if (esTarjeta && limite > 0) cuenta.limite = limite
+    else delete cuenta.limite
+    almacen.guardarCuenta(cuenta)
   }
   const eliminar = () => confirmar('¿Eliminar esta cuenta?', 'Sus movimientos se conservan, pero quedarán sin cuenta.', 'Eliminar', () => {
     almacen.eliminarCuenta(original)
@@ -194,6 +223,9 @@ export function FormCuenta({ original, alCerrar }) {
       <${FilaTexto} valor=${nombre} alCambiar=${setNombre} placeholder="Nombre (ej. BAC, Banrural, Cartera)" maximo=${Limites.nombre} />
       <${Separador} />
       <${FilaSelector} etiqueta="Tipo" valor=${tipo} opciones=${Object.keys(TipoCuenta)} texto=${(t) => TipoCuenta[t].nombre} alCambiar=${setTipo} />
+      ${esTarjeta && html`
+        <${Separador} />
+        <${FilaMontoCorto} etiqueta="Límite de crédito" valor=${limiteTexto} alCambiar=${setLimiteTexto} />`}
     <//>
     <${SeccionForm} titulo="Color"><${SelectorColor} indice=${color} alCambiar=${setColor} /><//>
     ${original && html`<${SeccionForm}><${FilaBoton} texto="Eliminar cuenta" alTocar=${eliminar} color=${C.gasto} simbolo="trash" /><//>`}

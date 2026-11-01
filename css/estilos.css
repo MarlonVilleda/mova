@@ -261,7 +261,16 @@ hr { border: 0; border-top: .5px solid var(--pista); margin: 0; width: 100%; }
 .populares button { flex: none; padding: 7px 12px; border-radius: 99px; background: var(--pista); font-size: 13px; font-weight: 500; }
 .populares button.activo { color: var(--t-azul); background: color-mix(in srgb, var(--t-azul) 16%, transparent); }
 
+/* Mi dinero */
+.fila-dinero { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 6px 0; text-align: left; }
+.fila-dinero-fila { display: flex; align-items: center; gap: 12px; }
+.fila-dinero-fila b { font-weight: 500; font-size: 15px; }
+.fila-dinero-fila small { color: var(--secundario); }
+.fila-dinero-fila strong { font-size: 17px; font-weight: 600; white-space: nowrap; }
+.fila-dinero-detalle { display: flex; justify-content: space-between; gap: 12px; padding-left: 48px; color: var(--secundario); }
+
 /* Bloqueo */
+.privado body { visibility: hidden; }
 .bloqueo { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
 .bloqueo-logo { width: 112px; height: 112px; display: grid; place-items: center; border-radius: 26px; background: var(--tarjeta); border: 1px solid var(--borde); }
 .bloqueo-clave { width: min(100%, 300px); }

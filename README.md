@@ -43,6 +43,18 @@ Las categorías propias y los cambios a las categorías de Mova solo existen en 
 abriendo en iPhone y Android, cada registro guarda también una categoría normal («Otros») y aparte
 `categoriaPropia`, que esas versiones ignoran.
 
+Las cuentas no se suman: Inicio muestra cada una por separado. Una deuda puede asociarse a una cuenta y una
+tarjeta puede tener límite; con eso `disponibleEn` calcula lo libre sin cambiar el saldo. Esos campos (`cuentaID`,
+`limite`) solo existen en la web.
+
+## Seguridad
+
+- Reglas por usuario en Supabase (`supabase/*.sql`) y clave publicable en el cliente.
+- Política de contenido en `index.html`, sin scripts externos ni de terceros.
+- Bloqueo por dispositivo al salir un minuto o tras cinco sin usarla; exportar, restaurar y borrar piden confirmar.
+
+Los datos del navegador no van cifrados. Si se agrega una dirección de Supabase distinta, actualizar `connect-src`.
+
 ## Al agregar un archivo
 
 Agrégalo también a la lista `ARCHIVOS` de `sw.js`, para que funcione sin internet.

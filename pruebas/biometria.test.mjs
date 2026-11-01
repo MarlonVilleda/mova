@@ -120,3 +120,20 @@ test('sin bloqueo activo nunca se bloquea', async () => {
   reloj = 999_999
   assert.equal(b.alMostrar(), false)
 })
+
+test('se bloquea tras cinco minutos abierta sin usarse', async () => {
+  const p = memoria()
+  p.m.set('bloqueo-credencial', 'AQID')
+  let reloj = 0
+  const b = new Bloqueo({ persistencia: p, credenciales: credenciales(), ahora: () => reloj })
+  await b.iniciar()
+  await b.desbloquear()
+  reloj = 299_000
+  assert.equal(b.revisarInactividad(), false)
+  b.marcarActividad()
+  reloj += 299_000
+  assert.equal(b.revisarInactividad(), false)
+  reloj += 2_000
+  assert.equal(b.revisarInactividad(), true)
+  assert.equal(b.bloqueado, true)
+})

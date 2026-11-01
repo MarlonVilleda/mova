@@ -62,6 +62,7 @@ function TarjetaDeuda({ deuda }) {
       <div class="crece corta">
         <b>${deuda.nombre}</b>
         ${deuda.persona && html`<${Nota}>${deuda.persona}<//>`}
+        ${almacen.cuenta(deuda.cuentaID) && html`<${Nota}>Cuenta: ${almacen.cuenta(deuda.cuentaID).nombre}<//>`}
       </div>
       <div class="derecha">
         <strong>${dinero(restante(deuda))}</strong>
@@ -121,6 +122,7 @@ export function DetalleDeuda({ deudaID, alCerrar }) {
     <${Tarjeta}>
       <${Encabezado} titulo="Detalles" />
       ${deuda.persona && html`<${FilaInfo} simbolo="person" titulo=${yoDebo ? 'Acreedor' : 'Deudor'} valor=${deuda.persona} />`}
+      ${almacen.cuenta(deuda.cuentaID) && html`<${FilaInfo} simbolo="creditcard" titulo="Cuenta asociada" valor=${almacen.cuenta(deuda.cuentaID).nombre} />`}
       ${deuda.cuotaMensual != null && html`<${FilaInfo} simbolo="calendar" titulo="Cuota mensual" valor=${dinero(deuda.cuotaMensual)} />`}
       ${deuda.diaDePago != null && html`<${FilaInfo} simbolo="clock" titulo="Día de pago" valor=${`Día ${deuda.diaDePago} de cada mes`} />`}
       ${proximo && html`<${FilaInfo} simbolo="bell" titulo="Próximo pago" valor=${textoFecha(proximo)} />`}
@@ -172,6 +174,7 @@ export function FormDeuda({ original, direccionInicial = 'yoDebo', alCerrar }) {
   const [fechaLimite, setFechaLimite] = useState(original?.fechaLimite ? fechaLocal(original.fechaLimite) : sumarMeses(hoy(), 12))
   const [nota, setNota] = useState(original?.nota ?? '')
   const [color, setColor] = useState(() => original?.color ?? Math.floor(Math.random() * Tonos.elegibles.length))
+  const [cuentaID, setCuentaID] = useState(original?.cuentaID ?? null)
 
   const total = comoMonto(totalTexto) ?? 0
   const pagadoAntes = original ? pagado(original) : comoMonto(yaPagadoTexto) ?? 0
@@ -200,6 +203,7 @@ export function FormDeuda({ original, direccionInicial = 'yoDebo', alCerrar }) {
       ['tasaAnual', tasa > 0 ? tasa : null],
       ['diaDePago', tieneDiaDePago ? diaDePago : null],
       ['fechaLimite', tieneLimite ? instante(fechaLimite) : null],
+      ['cuentaID', yoDebo ? cuentaID : null],
     ]) {
       if (valor == null) delete deuda[campo]
       else deuda[campo] = valor
@@ -226,6 +230,12 @@ export function FormDeuda({ original, direccionInicial = 'yoDebo', alCerrar }) {
         <${Separador} />
         <${FilaMontoCorto} etiqueta="Ya pagado" valor=${yaPagadoTexto} alCambiar=${setYaPagadoTexto} placeholder="0" />`}
     <//>
+
+    ${yoDebo && html`
+      <${SeccionForm} titulo="Cuenta" pie="Opcional. Lo que falta pagar se descuenta de lo disponible en esa cuenta, sin tocar su saldo.">
+        <${FilaSelector} etiqueta="Asociar a" valor=${cuentaID} opciones=${[null, ...almacen.datos.cuentas.map((c) => c.id)]}
+          texto=${(id) => (id == null ? 'Ninguna' : almacen.cuenta(id)?.nombre ?? '—')} alCambiar=${setCuentaID} />
+      <//>`}
 
     <${SeccionForm} titulo="Pagos">
       <${FilaMontoCorto} etiqueta="Cuota mensual" valor=${cuotaTexto} alCambiar=${setCuotaTexto} />
@@ -256,7 +266,7 @@ export function FormAbono({ deudaID, alCerrar }) {
   const [fecha, setFecha] = useState(hoy)
   const [nota, setNota] = useState('')
   const [enCuenta, setEnCuenta] = useState(cuentas.length > 0)
-  const [cuentaID, setCuentaID] = useState(cuentas[0]?.id ?? null)
+  const [cuentaID, setCuentaID] = useState(deuda?.cuentaID ?? cuentas[0]?.id ?? null)
 
   if (!deuda) {
     return html`<${Hoja} titulo="Pago" alCerrar=${alCerrar}>

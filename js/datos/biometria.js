@@ -4,6 +4,8 @@
 const CLAVE = 'bloqueo-credencial'
 /** Tiempo fuera de la app antes de volver a pedir el desbloqueo. */
 const GRACIA_MS = 60_000
+/** Tiempo con la app abierta sin tocarla antes de bloquearla. */
+const INACTIVIDAD_MS = 5 * 60_000
 
 export class ErrorBloqueo extends Error {}
 
@@ -33,6 +35,7 @@ export class Bloqueo {
     this.disponible = false
     this.bloqueado = false
     this.ocultoDesde = null
+    this.ultimaActividad = ahora()
   }
 
   get activo() {
@@ -91,6 +94,7 @@ export class Bloqueo {
   async desbloquear() {
     await this.verificar()
     this.bloqueado = false
+    this.marcarActividad()
   }
 
   /** Quitar el bloqueo también exige confirmar. */
@@ -108,6 +112,17 @@ export class Bloqueo {
 
   alOcultar() {
     this.ocultoDesde = this.ahora()
+  }
+
+  marcarActividad() {
+    this.ultimaActividad = this.ahora()
+  }
+
+  /** Devuelve true si se acaba de bloquear por llevar tiempo abierta sin usarse. */
+  revisarInactividad() {
+    if (!this.activo || this.bloqueado || this.ahora() - this.ultimaActividad < INACTIVIDAD_MS) return false
+    this.bloqueado = true
+    return true
   }
 
   /** Devuelve true si la app debe bloquearse al volver. */
