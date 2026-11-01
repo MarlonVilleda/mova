@@ -28,7 +28,8 @@ self.addEventListener('activate', (e) => {
 
 async function responder(pedido) {
   const cache = await caches.open(CACHE)
-  const red = fetch(pedido).then((respuesta) => {
+  // GitHub Pages deja guardar cada archivo 10 minutos; `no-cache` pregunta siempre si hay versión nueva.
+  const red = fetch(pedido.url, { cache: 'no-cache' }).then((respuesta) => {
     if (respuesta.ok) cache.put(pedido, respuesta.clone())
     return respuesta
   })
